@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/glog"
 	"github.com/nlopes/slack"
 )
 
@@ -50,15 +49,12 @@ func identifyChan(c string) slackChan {
 func slackSendMessage(channel slackChan, msg string) {
 	slackapi := slack.New(slackToken)
 	log.Println("slack send to " + channel.Name + ":" + msg)
-	_, _, err := slackapi.PostMessage(channel.Name, msg, slack.PostMessageParameters{})
-	if err != nil {
-		glog.Error(err)
-	}
-
-	channelID, timestamp, err := slackapi.PostMessage(channel.Code, msg, slack.PostMessageParameters{})
+	channelID, timestamp, err := slackapi.PostMessage(channel.Code, slack.MsgOptionText(msg, false), slack.MsgOptionAttachments(slack.Attachment{}))
+	//_, _, err := slackapi.PostMessage(channel.Name, msg, slack.PostMessageParameters{})
 	if err != nil {
 		fmt.Printf("%s\n", err)
 		return
 	}
+
 	fmt.Printf("Message successfully sent to channel %s at %s", channelID, timestamp)
 }
