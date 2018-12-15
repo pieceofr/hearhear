@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nlopes/slack"
+	"github.com/spf13/viper"
 )
 
 var chanName = []string{"公益"}
@@ -23,6 +24,7 @@ type slackChan struct {
 
 func main() {
 	log.Println("Run HearHear ...")
+	slackToken = InitConfig()
 	runHttpServ("8080")
 }
 
@@ -99,4 +101,16 @@ func slackSendMessage(msg string, slacktype string, addition interface{}) {
 		slackapi.PostMessage(channelID, slack.MsgOptionText(msg, false))
 	}
 
+}
+func InitConfig() string {
+	viper.SetConfigName("conf")
+	viper.AddConfigPath("./")
+	viper.SetConfigType("yaml")
+
+	err := viper.ReadInConfig()
+	if err != nil { // Handle errors reading the config file
+		fmt.Printf("config err:%v \n", err)
+	}
+	token := viper.GetString("tk")
+	return token
 }
