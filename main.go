@@ -25,6 +25,7 @@ type slackChan struct {
 func main() {
 	log.Println("Run HearHear ...")
 	slackToken = InitConfig()
+	fmt.Println(slackToken)
 	runHttpServ("8080")
 }
 
