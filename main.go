@@ -12,7 +12,9 @@ import (
 
 var chanName = []string{"公益"}
 var chanCode = []string{"CEVRD231V"}
-var slackToken = "xoxp-166092624144-167490026647-504867983490-cce0efd3adb8cc1f520c316fc9eaafb5"
+var userName = []string{"piceofr", "Croc"}
+var userCode = []string{"U4XEE0SK1", "UDQ27LXB5"}
+var slackToken = "xoxp-166092624144-167490026647-504153669040-cbc5d57bc9c48303fdcbcdd7218d12bd"
 
 type slackChan struct {
 	Name string
@@ -31,6 +33,7 @@ func runHttpServ(port string) {
 	})
 
 	route.GET("/sendMessage", sendMessage)
+	route.GET("/sendUser", sendUser)
 	route.Run(":" + port) // listen and serve on 0.0.0.0:8080
 }
 
@@ -47,10 +50,18 @@ func sendMessage(c *gin.Context) {
 	messageEnc := c.Query("message")
 	messagebyte, _ := b64.StdEncoding.DecodeString(messageEnc)
 	fmt.Println("channle:" + string(channelbyte) + "message:" + string(messagebyte))
-	slackSendMessage(identifyChan(string(channelbyte)), string(messagebyte))
+	slackSendMessage(string(messagebyte), "channel", identifyChan(string(channelbyte)))
 	c.JSON(200, gin.H{
 		"status": "ok",
 	})
+}
+
+func sendUser(c *gin.Context) {
+	userEnc := c.Query("user")
+	userbyte, _ := b64.StdEncoding.DecodeString(userEnc)
+	messageEnc := c.Query("message")
+	messagebyte, _ := b64.StdEncoding.DecodeString(messageEnc)
+	slackSendMessage(string(messagebyte), "user", identifyUser(string(userbyte)))
 }
 
 func identifyChan(c string) slackChan {
@@ -60,13 +71,32 @@ func identifyChan(c string) slackChan {
 	return socialGoodChan
 }
 
-func slackSendMessage(channel slackChan, msg string) {
+func identifyUser(c string) string {
+	return userCode[1]
+}
+
+func slackSendMessage(msg string, slacktype string, addition interface{}) {
 	slackapi := slack.New(slackToken)
-	log.Println("slack send to " + channel.Name + ":" + msg)
-	channelID, timestamp, err := slackapi.PostMessage(channel.Code, slack.MsgOptionText(msg, false))
-	if err != nil {
-		fmt.Printf("%s\n", err)
-		return
+
+	switch slacktype {
+	case "channel":
+		channel := addition.(slackChan)
+		channelID, timestamp, err := slackapi.PostMessage(channel.Code, slack.MsgOptionText(msg, false))
+		if err != nil {
+			fmt.Printf("%s\n", err)
+			return
+		}
+		log.Println("slack send to " + channel.Name + ":" + msg)
+		fmt.Printf("Message successfully sent to channel %s at %s", channelID, timestamp)
+	case "user":
+		userID := addition.(string)
+		fmt.Println("user id:" + userID)
+		_, _, channelID, err := slackapi.OpenIMChannel(userID)
+
+		if err != nil {
+			fmt.Printf("%s\n", err)
+		}
+		slackapi.PostMessage(channelID, slack.MsgOptionText(msg, false))
 	}
-	fmt.Printf("Message successfully sent to channel %s at %s", channelID, timestamp)
+
 }
